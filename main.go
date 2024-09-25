@@ -1,9 +1,11 @@
 package main
 
 import (
-	"encoding/json"
+	"flag"
 	"fmt"
+	"live/ai"
 	"live/common"
+	"live/videohub"
 	"net/http"
 	"os"
 
@@ -11,48 +13,34 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// 動画データのサンプル
-var videos = []map[string]string{
-	{"id": "1", "title": "動画1", "description": "これは動画1です"},
-	{"id": "2", "title": "動画2", "description": "これは動画2です"},
-	{"id": "3", "title": "これは動画3です", "description": "これは動画3です"},
-}
-
-// 動画一覧を返すハンドラ
-func listVideosHandler(w http.ResponseWriter, r *http.Request) {
-
-	if err := json.NewEncoder(w).Encode(videos); err != nil {
-		http.Error(w, "Failed to encode videos to JSON", http.StatusInternalServerError)
-		return
-	}
-}
-
-// メイン関数
 func main() {
-	// .envファイルから環境変数を読み込む
+	// フラグのパース
+	flag.Parse()
+
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Println("Error loading .env file")
+		common.LogError(fmt.Errorf("Error loading .env file: %v", err))
 	}
-
-	// ルーターを作成し、CORSミドルウェアを登録
-	r := mux.NewRouter()
-	r.Use(common.EnableCors)
-	fmt.Println("CORS ミドルウェアが登録されました")
-
-	// 動画一覧のエンドポイントを設定
-	r.HandleFunc("/api/v1/videos/list", listVideosHandler).Methods("GET")
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	origin := os.Getenv("API_ALLOWED_ORIGIN")
-	fmt.Println("許可するオリジン: " + origin)
+	// データベースの初期化
+	dbConn, err := common.InitDB()
+	if err != nil {
+		common.LogError(fmt.Errorf("Error initializing database: %v", err))
+		return
+	}
 
-	fmt.Println("サーバーをポート" + port + "で開始します")
-	if err := http.ListenAndServe(":"+port, r); err != nil {
-		fmt.Println(err)
+	r := mux.NewRouter()
+
+	videohub.RegisterRoutes(r, dbConn)
+	ai.RegisterRoutes(r)
+
+	common.LogTodo(common.INFO, "Starting server on port!!: "+port)
+	if err := http.ListenAndServe(":"+port, common.EnableCors(r)); err != nil {
+		common.LogError(fmt.Errorf("Error starting server: %v", err))
 	}
 }
