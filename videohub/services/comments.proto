@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package comments;
+
+option go_package = "videohub/services/comments_proto";
+
+// コメントのメッセージ定義
+message Comment {
+  int64 id = 1;        // コメントID
+  int64 user_id = 2;   // コメントしたユーザーID
+  int64 video_id = 3;  // 動画ID
+  string content = 4;  // コメント内容
+  string created_at = 5; // コメント作成日時
+  string modified_at = 6; // コメント更新日時
+}
+
+// 動画に紐づくコメントを取得するためのリクエスト
+message GetCommentsRequest {
+  int64 video_id = 1; // 動画ID
+}
+
+// 動画に紐づくコメントを取得するためのレスポンス
+message GetCommentsResponse {
+  repeated Comment comments = 1; // コメントのリスト
+}
+
+// 新しいコメントを投稿するためのリクエスト
+message PostCommentRequest {
+  int64 user_id = 1;   // ユーザーID
+  int64 video_id = 2;  // 動画ID
+  string content = 3;  // コメント内容
+}
+
+// 新しいコメントを投稿した際のレスポンス
+message PostCommentResponse {
+  bool success = 1;  // 成功したかどうか
+  string message = 2; // エラーメッセージまたは成功メッセージ
+}
+
+// gRPCサービスの定義
+service CommentsService {
+  // 特定の動画に紐づくコメントを取得する
+  rpc GetComments(GetCommentsRequest) returns (GetCommentsResponse);
+
+  // 新しいコメントを投稿する
+  rpc PostComment(PostCommentRequest) returns (PostCommentResponse);
+}
