@@ -6,6 +6,8 @@ import (
 	"live/ai"
 	"live/common"
 	"live/videohub"
+	"live/videohub/handlers"
+
 	pb "live/videohub/pb"
 	"log"
 	"net"
@@ -47,6 +49,13 @@ func main() {
 	// ルートの登録
 	videohub.RegisterRoutes(r, dbConn)
 	ai.RegisterRoutes(r)
+
+	// WebSocket用のプールを作成
+	pool := handlers.NewPool()
+	go pool.Start()
+
+	// WebSocketハンドラを登録
+	r.HandleFunc("/api/v1/ws", handlers.WebSocketHandler(pool))
 
 	// gRPC サーバーのリスナーを作成
 	lis, err := net.Listen("tcp", ":50051") // gRPC サーバーをポート 50051 でリッスン
