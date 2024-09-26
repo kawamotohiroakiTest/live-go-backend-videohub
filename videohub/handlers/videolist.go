@@ -1,19 +1,25 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"live/common"
 	"live/videohub/models"
 	"live/videohub/services"
+	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
+
+	pb "live/videohub/pb"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/personalizeruntime"
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
 	"gorm.io/gorm"
 )
 
@@ -230,4 +236,32 @@ func StreamVideoHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 動画をクライアントにストリーミング送信
 	http.Redirect(w, r, videoURL, http.StatusTemporaryRedirect) // 署名付きURLを返してリダイレクト
+}
+
+// GRPCのメソッド
+func FetchComments(videoID int64) {
+	// gRPCサーバーのアドレス
+	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("Did not connect: %v", err)
+	}
+	defer conn.Close()
+
+	// クライアントを作成
+	client := pb.NewCommentsServiceClient(conn)
+
+	// コンテキストを作成
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	// GetCommentsの呼び出し
+	r, err := client.GetComments(ctx, &pb.GetCommentsRequest{VideoId: videoID})
+	if err != nil {
+		log.Fatalf("Could not fetch comments: %v", err)
+	}
+
+	// 結果を出力
+	for _, comment := range r.Comments {
+		log.Printf("Comment: %s", comment.Content)
+	}
 }

@@ -2,22 +2,25 @@ package models
 
 import (
 	"live/common"
+	pb "live/videohub/pb"
 	"time"
 )
 
 type Video struct {
-	ID          uint        `gorm:"primary_key"`
-	UserID      uint        `gorm:"not null"`                                              // 外部キー usersテーブルのID
-	Title       string      `gorm:"type:varchar(255);not null"`                            // 動画のタイトル
-	Description string      `gorm:"type:text"`                                             // 説明
-	ViewCount   uint        `gorm:"default:0;not null"`                                    // 視聴回数
-	Rating      float64     `gorm:"type:decimal(3,2);default:0.00"`                        // 評価
-	Genre       string      `gorm:"type:varchar(255);not null"`                            // ジャンル
-	PostedAt    time.Time   `gorm:"default:CURRENT_TIMESTAMP;not null"`                    // 投稿日時
-	Created     time.Time   `gorm:"default:CURRENT_TIMESTAMP"`                             // 作成日時
-	Modified    time.Time   `gorm:"default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"` // 更新日時
-	Deleted     *time.Time  `gorm:"default:NULL"`                                          // 削除日時
-	Files       []VideoFile `gorm:"foreignKey:VideoID"`                                    // 動画ファイルとのリレーション
+	ID          uint          `gorm:"primary_key"`
+	UserID      uint          `gorm:"not null"`                                              // 外部キー usersテーブルのID
+	Title       string        `gorm:"type:varchar(255);not null"`                            // 動画のタイトル
+	Description string        `gorm:"type:text"`                                             // 説明
+	ViewCount   uint          `gorm:"default:0;not null"`                                    // 視聴回数
+	Rating      float64       `gorm:"type:decimal(3,2);default:0.00"`                        // 評価
+	Genre       string        `gorm:"type:varchar(255);not null"`                            // ジャンル
+	PostedAt    time.Time     `gorm:"default:CURRENT_TIMESTAMP;not null"`                    // 投稿日時
+	Created     time.Time     `gorm:"default:CURRENT_TIMESTAMP"`                             // 作成日時
+	Modified    time.Time     `gorm:"default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"` // 更新日時
+	Deleted     *time.Time    `gorm:"default:NULL"`                                          // 削除日時
+	Files       []VideoFile   `gorm:"foreignKey:VideoID"`                                    // 動画ファイルとのリレーション
+	Comments    []*pb.Comment `json:"comments"`                                              // コメント情報
+
 }
 
 type VideoFile struct {

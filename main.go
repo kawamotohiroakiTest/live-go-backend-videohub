@@ -6,12 +6,13 @@ import (
 	"live/ai"
 	"live/common"
 	"live/videohub"
-	"live/videohub/services"
+	pb "live/videohub/pb"
+	"log"
 	"net"
 	"net/http"
 	"os"
 
-	pb "live/videohub/services/comments_proto"
+	"live/videohub/services"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -22,6 +23,7 @@ func main() {
 	// フラグのパース
 	flag.Parse()
 
+	// 環境変数の読み込み
 	err := godotenv.Load()
 	if err != nil {
 		common.LogError(fmt.Errorf("Error loading .env file: %v", err))
@@ -39,34 +41,38 @@ func main() {
 		return
 	}
 
+	// HTTP ルーターの初期化
 	r := mux.NewRouter()
 
+	// ルートの登録
 	videohub.RegisterRoutes(r, dbConn)
 	ai.RegisterRoutes(r)
 
-	// gRPC サーバーのセットアップ
+	// gRPC サーバーのリスナーを作成
+	lis, err := net.Listen("tcp", ":50051") // gRPC サーバーをポート 50051 でリッスン
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
 
+	// gRPC サーバーの作成
+	grpcServer := grpc.NewServer()
+
+	// コメントサービスの初期化
+	commentsService := services.NewCommentsService()
+
+	// コメントサービスを gRPC サーバーに登録
+	pb.RegisterCommentsServiceServer(grpcServer, commentsService)
+
+	// gRPC サーバーの起動
 	go func() {
-		lis, err := net.Listen("tcp", ":50051")
-		if err != nil {
-			common.LogError(fmt.Errorf("Failed to listen on gRPC port: %v", err))
-			return
-		}
-
-		grpcServer := grpc.NewServer()
-
-		// コメントサービスを gRPC サーバーに登録
-		commentService := services.NewCommentsServiceServer(dbConn)
-		pb.RegisterCommentsServiceServer(grpcServer, commentService)
-
 		fmt.Println("Starting gRPC server on port 50051")
 		if err := grpcServer.Serve(lis); err != nil {
-			common.LogError(fmt.Errorf("Failed to serve gRPC server: %v", err))
+			log.Fatalf("Failed to serve gRPC server: %v", err)
 		}
 	}()
 
-	common.LogTodo(common.INFO, "Starting server on port!!: "+port)
+	// HTTP サーバーの起動
 	if err := http.ListenAndServe(":"+port, common.EnableCors(r)); err != nil {
-		common.LogError(fmt.Errorf("Error starting server: %v", err))
+		common.LogError(fmt.Errorf("Error starting HTTP server: %v", err))
 	}
 }

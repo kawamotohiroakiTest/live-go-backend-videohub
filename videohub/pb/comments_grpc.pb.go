@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.20.3
-// source: videohub/services/comments.proto
+// source: comments.proto
 
-package comments_proto
+package __
 
 import (
 	context "context"
@@ -31,6 +31,8 @@ type CommentsServiceClient interface {
 type commentsServiceClient struct {
 	cc grpc.ClientConnInterface
 }
+
+
 
 func NewCommentsServiceClient(cc grpc.ClientConnInterface) CommentsServiceClient {
 	return &commentsServiceClient{cc}
@@ -141,5 +143,5 @@ var CommentsService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "videohub/services/comments.proto",
+	Metadata: "comments.proto",
 }

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"live/common"
@@ -9,10 +10,27 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
+
+	pb "live/videohub/pb"
 
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
 	"gorm.io/gorm"
 )
+
+// コメントサービス用gRPCクライアントを初期化する関数
+func initCommentsClient() (pb.CommentsServiceClient, *grpc.ClientConn, error) {
+	// gRPCサーバーへの接続
+	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure()) // 実際のアドレスを指定
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// コメントサービスクライアントを生成
+	client := pb.NewCommentsServiceClient(conn)
+	return client, conn, nil
+}
 
 func GetVideoByIDHandler(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	// URLからvideo_idを取得
@@ -61,6 +79,34 @@ func GetVideoByIDHandler(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
+	// GRPCのコメントサービスを呼び出してコメントを取得
+	// コメントサービスクライアントの初期化
+	commentClient, conn, err := initCommentsClient()
+	if err != nil {
+		common.LogVideoHubError(err)
+		http.Error(w, "コメントサービスの初期化に失敗しました", http.StatusInternalServerError)
+		return
+	}
+	defer conn.Close()
+
+	// コメントの取得リクエストを作成
+	commentReq := &pb.GetCommentsRequest{
+		VideoId: int64(videoID),
+	}
+
+	// コメントを取得
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	commentsRes, err := commentClient.GetComments(ctx, commentReq)
+	if err != nil {
+		common.LogVideoHubError(err)
+		http.Error(w, "コメントの取得に失敗しました", http.StatusInternalServerError)
+		return
+	}
+
+	video.Comments = commentsRes.Comments // ここでコメントを追加
 
 	// 動画情報をJSONで返す
 	w.Header().Set("Content-Type", "application/json")

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package comments;
 
-option go_package = "videohub/services/comments_proto";
+option go_package = "/";
 
 // コメントのメッセージ定義
 message Comment {
