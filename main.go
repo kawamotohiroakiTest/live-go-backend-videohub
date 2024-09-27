@@ -74,7 +74,7 @@ func main() {
 
 	// gRPC サーバーの起動
 	go func() {
-		fmt.Println("Starting gRPC server on port 50051")
+		fmt.Println("Starting gRPC server on port 50051 ")
 		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve gRPC server: %v", err)
 		}
