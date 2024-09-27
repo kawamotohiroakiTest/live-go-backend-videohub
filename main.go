@@ -68,7 +68,7 @@ func main() {
 	grpcServer := grpc.NewServer()
 
 	// コメントサービスの初期化
-	commentsService := services.NewCommentsService()
+	commentsService := services.NewCommentsService(dbConn)
 
 	// コメントサービスを gRPC サーバーに登録
 	pb.RegisterCommentsServiceServer(grpcServer, commentsService)
