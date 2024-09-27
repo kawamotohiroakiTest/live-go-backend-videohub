@@ -56,6 +56,7 @@ func main() {
 
 	// WebSocketハンドラを登録
 	r.HandleFunc("/api/v1/ws", handlers.WebSocketHandler(pool))
+	r.HandleFunc("/api/v1/health", common.HealthHandler)
 
 	// gRPC サーバーのリスナーを作成
 	lis, err := net.Listen("tcp", ":50051") // gRPC サーバーをポート 50051 でリッスン
